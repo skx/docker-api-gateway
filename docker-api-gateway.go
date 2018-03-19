@@ -31,7 +31,6 @@ import (
 	"text/template"
 )
 
-
 //
 // A structure to describe a running container.
 //
@@ -63,8 +62,6 @@ type DockerGuest struct {
 	//
 	IP string
 }
-
-
 
 //
 // Find the IP address assigned to the container with the specified ID.
@@ -127,9 +124,9 @@ func OutputHAProxyConfig() {
 			// The guest
 			//
 			var tmp DockerGuest
-			tmp.Name	= data[0]
-			tmp.ID		= data[1]
-			tmp.IP		= IPFor(data[1])
+			tmp.Name = data[0]
+			tmp.ID = data[1]
+			tmp.IP = IPFor(data[1])
 			tmp.FriendlyName = reg.ReplaceAllString(tmp.Name, "_")
 
 			//
@@ -170,14 +167,13 @@ func OutputHAProxyConfig() {
 	//
 	// Reload HAProxy
 	//
-	out, err = exec.Command("//bin/systemctl", "reload", "haproxy.service" ).Output()
+	out, err = exec.Command("//bin/systemctl", "reload", "haproxy.service").Output()
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Reloaded HAProxy :)")
 }
-
 
 //
 // Watch for new containers being started, or existing ones being
@@ -206,7 +202,10 @@ func WatchDocker() {
 		OutputHAProxyConfig()
 	}
 
-	cmd.Wait()
+	//
+	// Not reached
+	//
+	// cmd.Wait()
 
 }
 

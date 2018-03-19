@@ -75,6 +75,30 @@ Now you should find PHPInfo() in all its glory:
 You'll notice in both cases that the request made to the docker-container will have the image-name prefix stripped off it.
 
 
+## Possible Enhancements?
+
+The most obvious way to change/improve this project is to switch from
+prefix-based routing to vhost-based.
+
+For example rather than:
+
+* http://api.example.com/foo/bar
+
+Allow:
+
+* http://bar.api.example.com
+
+Although `bar` isn't a complete identifier it is unlikely you'd have
+multiple containers running with the same suffix (I assume!)  Doing this
+would only involve rewriting the haproxy.cfg template - perhaps adding
+a command-line flag to allow the user to choose which template to use
+would make that easier.
+
+Otherwise I think the only real changes would be to add verbosity-flag,
+and cleanup the code itself.  (The docker-specific bits could go in a 
+library.)
+
+
 ## Disclaimer
 
 This is a quick hack.  I've tested it with several simple HTTP-based
