@@ -92,6 +92,7 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("\tReloaded haproxy.service\n")
 
 }
 
