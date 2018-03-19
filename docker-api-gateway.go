@@ -118,7 +118,8 @@ func WatchDocker(template_file string, output_file string) {
 			log.Fatal("Read Error:", err)
 			return
 		}
-		fmt.Println(str)
+		fmt.Printf("Event received - regenerating %s\n", output_file)
+
 		OutputHAProxyConfig(template_file, output_file)
 	}
 
