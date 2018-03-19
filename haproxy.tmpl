@@ -50,4 +50,5 @@ backend no-match
 backend {{.FriendlyName}}-backend
    reqrep ^(GET|HEAD|POST)\ /{{.Name}}(.*) \1\ /\2
    server name {{.IP}}:8000 check inter 2000
+   server name {{.IP}}:80   check inter 2000
 {{end}}

@@ -16,13 +16,17 @@ backend based on the URL prefix.  For example:
 
 * http://localhost/foo/bar
   * Will send traffic to the running container of image foo/bar on port 8000.
+  * Will send traffic to the running container of image foo/bar on port 80.
 * http://localhost/hello/world
-   * Will send traffic to the running container of image hello/world on port 8000.
+  * Will send traffic to the running container of image hello/world on port 80
+  * Will send traffic to the running container of image hello/world on port 8000.
 
 Our assumpions are:
 
 * You will have started the containers you expect to be using.
-* Each container is a HTTP-server which is listening on port 8000.
+* Each container is a HTTP-server which is listening on port 8000, or port 80.
+  * These seem to be the most common.
+  * Adding new ports is easy, and the HAProxy healthchecks will ensure that only the live-port will be used.
 * HAProxy will handle all the routing.
 
 
@@ -44,6 +48,36 @@ it in the background:
 
      root@frodo:~# docker run -d crccheck/hello-world
      df6aabd4b13363c979bbc64618a7e087e3c18c318f2eea626e8f79c84002bf0d
+
+At this point you should notice that the file `/etc/haproxy/haproxy.cfg` has
+been rewritten and will now include:
+
+     ..
+
+	 acl crccheck_hello_world path_beg /crccheck/hello-world
+	 use_backend crccheck_hello_world-backend if crccheck_hello_world
+     ..
+
+     backend crccheck_hello_world-backend
+      reqrep ^(GET|HEAD|POST)\ /crccheck/hello-world(.*) \1\ /\2
+      server name 172.17.0.2:8000 check inter 2000
+
+This means that access to this container can be achieved by hitting:
+
+     $ curl http://localhost/crccheck/hello-world
+     $ curl http://localhost/crccheck/hello-world/
+
+If you stop the container you'll see instead that all accesses will return
+a `403` response, via the default-handler.
+
+Similarly if you spin up a PHP container like so:
+
+      root@frodo:~# docker run -d ipunktbs/phpinfo
+
+Now you should find PHPInfo() in all its glory:
+
+     $ curl http://localhost/ipunktbs/phpinfo/
+
 
 
 ## HAProxy
