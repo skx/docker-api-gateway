@@ -55,6 +55,10 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 		Guests []docker.DockerGuest
 		Time   string
 	}
+
+	//
+	// Create a data-structure to pass to the template.
+	//
 	var x Pagedata
 	x.Guests = guests
 	x.Time = time.Now().Format(time.RFC3339)
@@ -64,13 +68,17 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 	//
 	t := template.Must(template.New(template_file).ParseFiles(template_file))
 	buf := &bytes.Buffer{}
+
+	//
+	// Generate the rendered template.
+	//
 	err = t.Execute(buf, x)
 	if err != nil {
 		panic(err)
 	}
 
 	//
-	// Write the generated template out to disc
+	// Write the generated output to disc
 	//
 	err = ioutil.WriteFile(output_file, buf.Bytes(), 0644)
 	if err != nil {
@@ -125,5 +133,5 @@ func WatchDocker(template_file string, output_file string) {
 // Entry point.
 //
 func main() {
-	WatchDocker("haproxy.tmpl","/etc/haproxy/haproxy.cfg")
+	WatchDocker("haproxy.tmpl", "/etc/haproxy/haproxy.cfg")
 }
