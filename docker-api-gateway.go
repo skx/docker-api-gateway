@@ -20,7 +20,7 @@
 package main
 
 import (
-	"./docker"
+	"github.com/skx/docker-api-gateway/docker"
 	"bufio"
 	"bytes"
 	"fmt"
