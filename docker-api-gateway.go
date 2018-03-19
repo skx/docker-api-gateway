@@ -113,7 +113,7 @@ func WatchDocker(template_file string, output_file string) {
 
 	rd := bufio.NewReader(out)
 	for {
-		str, err := rd.ReadString('\n')
+		_, err := rd.ReadString('\n')
 		if err != nil {
 			log.Fatal("Read Error:", err)
 			return
