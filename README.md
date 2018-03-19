@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Docker API Gateway
 
 This is a simple project which is designed to allow you to setup an
@@ -65,7 +64,3 @@ Otherwise feedback is welcome.
 
 Steve
 --
-=======
-# docker-api-gateway
-Trivial API-gateway for docker, via HAProxy
->>>>>>> 0c8a786059a3de863c0dc127545125203b1e3bee
