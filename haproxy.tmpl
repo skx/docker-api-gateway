@@ -1,0 +1,53 @@
+
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
+
+defaults
+        log     global
+        mode    http
+        option  httplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  50000
+        timeout server  50000
+
+
+##
+## Front-end will listen on *:80 and route to each container
+##
+frontend api.example.com
+   bind *:80
+   {{range .Guests }}
+	   acl {{.FriendlyName}} path_beg /{{.Name}}
+	   use_backend {{.FriendlyName}}-backend if {{.FriendlyName}}
+   {{end}}
+
+   # Catches anything not covered by use_backend above
+   default_backend no-match
+
+
+backend no-match
+  http-request deny deny_status 403
+
+
+##
+## Now begins the backends for each running container.
+##
+
+
+{{range .Guests }}
+#
+# {{.Name}} running on {{.IP}}:8000
+# Container ID {{.ID}}
+#
+backend {{.FriendlyName}}-backend
+   reqrep ^(GET|HEAD|POST)\ /{{.Name}}(.*) \1\ /\2
+   server name {{.IP}}:8000 check inter 2000
+{{end}}
