@@ -20,120 +20,31 @@
 package main
 
 import (
+	"./docker"
 	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os/exec"
-	"regexp"
-	"strings"
 	"text/template"
+	"time"
 )
-
-//
-// A structure to describe a running container.
-//
-type DockerGuest struct {
-	// Name of the image such as "example/wordpress"
-	Name string
-
-	//
-	// Friendly name of that image, such as "example_wordpress"
-	//
-	// This is required because haproxy doesn't like all characters
-	// being used in ACL or backend-names.
-	//
-	FriendlyName string
-
-	//
-	// The ID of the running container.
-	//
-	ID string
-
-	//
-	// The IP address the docker guest is listening upon
-	//
-	// NOTE: We assume all guests bind to :8000.
-	//
-	// NOTE: This is a string because we are merely parsing it
-	// and pasting it into the HAProxy configuration file.  Of
-	// course it is more natural to store it as an IP address..
-	//
-	IP string
-}
-
-//
-// Find the IP address assigned to the container with the specified ID.
-//
-func IPFor(guest string) string {
-
-	out, err := exec.Command("/usr/bin/docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", guest).Output()
-	if err != nil {
-		panic(err)
-	}
-	return (strings.TrimSpace(string(out)))
-}
 
 //
 // Output a configuration file for haproxy containing all the current
 // guests which are present.
 //
-func OutputHAProxyConfig() {
+func OutputHAProxyConfig(template_file string, output_file string) {
 
 	//
-	// These are the guests that are running
+	// Find all running containers
 	//
-	var guests []DockerGuest
+	guests, err := docker.AllRunningContainers()
 
-	//
-	// For each image which is running we'll find the name
-	// of the image, and the running ID.
-	//
-	out, err := exec.Command("/usr/bin/docker",
-		"ps", "--format", "{{.Image}},{{.ID}}").Output()
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	//
-	// Make a Regex to say we only want alphanumeric characters
-	//
-	// This is used to convert the name of the image to a friendly
-	// name for HAProxy.
-	//
-	reg, err := regexp.Compile("[^a-zA-Z0-9]+")
-	if err != nil {
-		panic(err)
-	}
-
-	//
-	// For each running container we'll add a structure with its
-	// data to our array `guests`.
-	//
-	entries := strings.Split(string(out), "\n")
-	for _, container := range entries {
-		if len(container) > 1 {
-
-			//
-			// The format is "name,id".  So split on the comma
-			//
-			data := strings.Split(container, ",")
-
-			//
-			// The guest
-			//
-			var tmp DockerGuest
-			tmp.Name = data[0]
-			tmp.ID = data[1]
-			tmp.IP = IPFor(data[1])
-			tmp.FriendlyName = reg.ReplaceAllString(tmp.Name, "_")
-
-			//
-			// Add to our list.
-			//
-			guests = append(guests, tmp)
-		}
+		log.Fatal("Failed to find running guests:", err)
+		return
 	}
 
 	//
@@ -141,15 +52,17 @@ func OutputHAProxyConfig() {
 	// in the future.
 	//
 	type Pagedata struct {
-		Guests []DockerGuest
+		Guests []docker.DockerGuest
+		Time   string
 	}
 	var x Pagedata
 	x.Guests = guests
+	x.Time = time.Now().Format(time.RFC3339)
 
 	//
 	// Load our template-file
 	//
-	t := template.Must(template.New("haproxy.tmpl").ParseFiles("haproxy.tmpl"))
+	t := template.Must(template.New(template_file).ParseFiles(template_file))
 	buf := &bytes.Buffer{}
 	err = t.Execute(buf, x)
 	if err != nil {
@@ -159,7 +72,7 @@ func OutputHAProxyConfig() {
 	//
 	// Write the generated template out to disc
 	//
-	err = ioutil.WriteFile("/etc/haproxy/haproxy.cfg", buf.Bytes(), 0644)
+	err = ioutil.WriteFile(output_file, buf.Bytes(), 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -167,19 +80,18 @@ func OutputHAProxyConfig() {
 	//
 	// Reload HAProxy
 	//
-	out, err = exec.Command("//bin/systemctl", "reload", "haproxy.service").Output()
+	_, err = exec.Command("/bin/systemctl", "reload", "haproxy.service").Output()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Reloaded HAProxy :)")
 }
 
 //
 // Watch for new containers being started, or existing ones being
 // removed.
 //
-func WatchDocker() {
+func WatchDocker(template_file string, output_file string) {
 	cmd := exec.Command("/usr/bin/docker",
 		"events",
 		"--filter",
@@ -199,7 +111,7 @@ func WatchDocker() {
 			return
 		}
 		fmt.Println(str)
-		OutputHAProxyConfig()
+		OutputHAProxyConfig(template_file, output_file)
 	}
 
 	//
@@ -213,5 +125,5 @@ func WatchDocker() {
 // Entry point.
 //
 func main() {
-	WatchDocker()
+	WatchDocker("haproxy.tmpl","/etc/haproxy/haproxy.cfg")
 }
