@@ -112,6 +112,7 @@ func OutputHAProxyConfig() {
 	reload := strings.Split(FLAGS.reload_cmd, " ")
 	_, err = exec.Command(reload[0], reload[1:]...).Output()
 	if err != nil {
+		fmt.Printf("Failed to run command: %s\n", FLAGS.reload_cmd)
 		panic(err)
 	}
 	fmt.Printf("\tReloaded haproxy.service\n")
