@@ -43,11 +43,19 @@ type DockerGuest struct {
 	IP string
 }
 
+
+//
+// Does the given file exist?
+//
+func Exists(name string) bool {
+    _, err := os.Stat(name)
+    return !os.IsNotExist(err)
+}
 //
 // Check that docker is installed where we expect
 //
 func CheckDocker() {
-	if _, err := os.Stat("/usr/bin/docker"); os.IsNotExist(err) {
+	if ! Exists("/usr/bin/docker") {
 		fmt.Printf("/usr/bin/docker was not found!" )
 		os.Exit(1)
 	}
