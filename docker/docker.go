@@ -42,9 +42,22 @@ type DockerGuest struct {
 }
 
 //
+// Check that docker is installed where we expect
+//
+func CheckDocker() {
+	if _, err := os.Stat("/usr/bin/docker"); os.IsNotExist(err) {
+		fmt.Printf("/usr/bin/docker was not found!" )
+		os.Exit(1)
+	}
+}
+
+
+//
 // Return details of all running containers.
 //
 func AllRunningContainers() ([]DockerGuest, error) {
+
+	CheckDocker()
 
 	//
 	// These are the guests that are running
@@ -110,6 +123,8 @@ func AllRunningContainers() ([]DockerGuest, error) {
 // Find the IP address assigned to the container with the specified ID.
 //
 func IPFor(guest string) string {
+
+	CheckDocker()
 
 	out, err := exec.Command("/usr/bin/docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", guest).Output()
 	if err != nil {
