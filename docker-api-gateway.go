@@ -82,7 +82,12 @@ func OutputHAProxyConfig() {
 	//
 	// Load our template-file
 	//
-	t := template.Must(template.New(FLAGS.template_file).ParseFiles(FLAGS.template_file))
+	t, err := template.ParseFiles(FLAGS.template_file)
+	if err != nil {
+		log.Fatal("Failed to load template-file", err)
+		return
+	}
+
 	buf := &bytes.Buffer{}
 
 	//
