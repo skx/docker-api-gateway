@@ -177,7 +177,7 @@ func Watch(fn DockerCallback) {
 			log.Fatal("Read Error:", err)
 			return
 		}
-		fmt.Printf("Event received - regenerating %s\n", FLAGS.haproxy_file)
+		fmt.Printf("Docker event received\n")
 
 		fn()
 	}
