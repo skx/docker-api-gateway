@@ -6,6 +6,7 @@ package docker
 
 import (
 	"log"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
