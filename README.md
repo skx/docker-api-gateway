@@ -75,6 +75,18 @@ Now you should find PHPInfo() in all its glory:
 You'll notice in both cases that the request made to the docker-container will have the image-name prefix stripped off it.
 
 
+## Command-Line Flags
+
+The following flags are supported:
+
+* `-template-file`
+  * The name of the template file to read to generate the output.  Default `haproxy.tmpl`.
+* `-output-file`
+   * The name of the haproxy configuration file to generate.  Default `/etc/haproxy/haproxy.cfg`
+* `-reload-cmd`
+   * The command to execute when the output file has been written.  Default `/bin/systemctl reload haproxy.service`.
+
+
 ## Possible Enhancements?
 
 The most obvious way to change/improve this project is to switch from
@@ -93,10 +105,6 @@ multiple containers running with the same suffix (I assume!)  Doing this
 would only involve rewriting the haproxy.cfg template - perhaps adding
 a command-line flag to allow the user to choose which template to use
 would make that easier.
-
-Otherwise I think the only real changes would be to add verbosity-flag,
-and cleanup the code itself.  (The docker-specific bits could go in a 
-library.)
 
 
 ## Disclaimer

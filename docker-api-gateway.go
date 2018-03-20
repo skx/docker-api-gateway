@@ -20,22 +20,38 @@
 package main
 
 import (
-	"github.com/skx/docker-api-gateway/docker"
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
+	"github.com/skx/docker-api-gateway/docker"
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"strings"
 	"text/template"
 	"time"
 )
 
 //
+// Our command-line flags
+//
+type CommandLineOptions struct {
+	template_file string
+	haproxy_file  string
+	reload_cmd    string
+}
+
+//
+// The flags all the routines use.
+//
+var FLAGS CommandLineOptions
+
+//
 // Output a configuration file for haproxy containing all the current
 // guests which are present.
 //
-func OutputHAProxyConfig(template_file string, output_file string) {
+func OutputHAProxyConfig() {
 
 	//
 	// Find all running containers
@@ -66,7 +82,7 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 	//
 	// Load our template-file
 	//
-	t := template.Must(template.New(template_file).ParseFiles(template_file))
+	t := template.Must(template.New(FLAGS.template_file).ParseFiles(FLAGS.template_file))
 	buf := &bytes.Buffer{}
 
 	//
@@ -80,7 +96,7 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 	//
 	// Write the generated output to disc
 	//
-	err = ioutil.WriteFile(output_file, buf.Bytes(), 0644)
+	err = ioutil.WriteFile(FLAGS.haproxy_file, buf.Bytes(), 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +104,8 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 	//
 	// Reload HAProxy
 	//
-	_, err = exec.Command("/bin/systemctl", "reload", "haproxy.service").Output()
+	reload := strings.Split(FLAGS.reload_cmd, " ")
+	_, err = exec.Command(reload[0], reload[1:]...).Output()
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +117,7 @@ func OutputHAProxyConfig(template_file string, output_file string) {
 // Watch for new containers being started, or existing ones being
 // removed.
 //
-func WatchDocker(template_file string, output_file string) {
+func WatchDocker() {
 	cmd := exec.Command("/usr/bin/docker",
 		"events",
 		"--filter",
@@ -119,9 +136,9 @@ func WatchDocker(template_file string, output_file string) {
 			log.Fatal("Read Error:", err)
 			return
 		}
-		fmt.Printf("Event received - regenerating %s\n", output_file)
+		fmt.Printf("Event received - regenerating %s\n", FLAGS.haproxy_file)
 
-		OutputHAProxyConfig(template_file, output_file)
+		OutputHAProxyConfig()
 	}
 
 	//
@@ -135,5 +152,15 @@ func WatchDocker(template_file string, output_file string) {
 // Entry point.
 //
 func main() {
-	WatchDocker("haproxy.tmpl", "/etc/haproxy/haproxy.cfg")
+
+	//
+	// Parse our flags
+	//
+	flag.StringVar(&FLAGS.template_file, "template-file", "haproxy.tmpl", "The path to the haproxy template-file")
+	flag.StringVar(&FLAGS.haproxy_file, "output-file", "/etc/haproxy/haproxy.cfg", "The path to haproxy configuration file to generate")
+	flag.StringVar(&FLAGS.reload_cmd, "reload-command", "/bin/systemctl reload haproxy.service", "The command to execute to reload haproxy")
+
+	flag.Parse()
+
+	WatchDocker()
 }
