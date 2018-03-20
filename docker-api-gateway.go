@@ -27,6 +27,7 @@ import (
 	"github.com/skx/docker-api-gateway/docker"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"text/template"
@@ -167,5 +168,10 @@ func main() {
 
 	flag.Parse()
 
+	if _, err := os.Stat(FLAGS.template_file); os.IsNotExist(err) {
+		fmt.Printf("The default 'haproxy.tmpl' file was not found in this directory\n")
+		fmt.Printf("Please specify one; you can use '-help' to see all flags\n")
+		os.Exit(1)
+	}
 	WatchDocker()
 }
