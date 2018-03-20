@@ -5,6 +5,7 @@
 package docker
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -45,12 +46,21 @@ type DockerGuest struct {
 
 
 //
+// A function which is invoked as a callback when containers
+// are started/stopped
+//
+type DockerCallback func()
+
+
+//
 // Does the given file exist?
 //
 func Exists(name string) bool {
     _, err := os.Stat(name)
     return !os.IsNotExist(err)
 }
+
+
 //
 // Check that docker is installed where we expect
 //
@@ -141,4 +151,40 @@ func IPFor(guest string) string {
 		panic(err)
 	}
 	return (strings.TrimSpace(string(out)))
+}
+
+
+//
+// Watch for new containers being started, or existing ones being
+// removed.
+//
+func Watch(fn DockerCallback) {
+	cmd := exec.Command("/usr/bin/docker",
+		"events",
+		"--filter",
+		"event=start",
+		"--filter",
+		"event=stop",
+		"--filter",
+		"type=container")
+	out, _ := cmd.StdoutPipe()
+	cmd.Start()
+
+	rd := bufio.NewReader(out)
+	for {
+		_, err := rd.ReadString('\n')
+		if err != nil {
+			log.Fatal("Read Error:", err)
+			return
+		}
+		fmt.Printf("Event received - regenerating %s\n", FLAGS.haproxy_file)
+
+		fn()
+	}
+
+	//
+	// Not reached
+	//
+	// cmd.Wait()
+
 }

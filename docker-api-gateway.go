@@ -20,7 +20,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
@@ -119,40 +118,6 @@ func OutputHAProxyConfig() {
 
 }
 
-//
-// Watch for new containers being started, or existing ones being
-// removed.
-//
-func WatchDocker() {
-	cmd := exec.Command("/usr/bin/docker",
-		"events",
-		"--filter",
-		"event=start",
-		"--filter",
-		"event=stop",
-		"--filter",
-		"type=container")
-	out, _ := cmd.StdoutPipe()
-	cmd.Start()
-
-	rd := bufio.NewReader(out)
-	for {
-		_, err := rd.ReadString('\n')
-		if err != nil {
-			log.Fatal("Read Error:", err)
-			return
-		}
-		fmt.Printf("Event received - regenerating %s\n", FLAGS.haproxy_file)
-
-		OutputHAProxyConfig()
-	}
-
-	//
-	// Not reached
-	//
-	// cmd.Wait()
-
-}
 
 //
 // Entry point.
@@ -173,5 +138,5 @@ func main() {
 		fmt.Printf("Please specify one; you can use '-help' to see all flags\n")
 		os.Exit(1)
 	}
-	WatchDocker()
+	docker.Watch( OutputHAProxyConfig )
 }
