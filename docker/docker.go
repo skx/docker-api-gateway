@@ -5,6 +5,7 @@
 package docker
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
